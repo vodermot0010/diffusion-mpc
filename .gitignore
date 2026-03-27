@@ -10,3 +10,8 @@ image*
 exp/
 cache/
 checkpoints/
+.ipynb_checkpoints/
+training_log/
+*.pth
+*.log
+valid_train_logs_cache.json
