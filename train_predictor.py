@@ -100,6 +100,9 @@ def get_args():
 
     args = parser.parse_args()
 
+    # guidance_fn is used in inference sampling; keep None for standard training.
+    args.guidance_fn = None
+
     args.state_normalizer = StateNormalizer.from_json(args)
     args.observation_normalizer = ObservationNormalizer.from_json(args)
     

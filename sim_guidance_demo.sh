@@ -1,21 +1,27 @@
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+export PYTHONPATH="$SCRIPT_DIR:${PYTHONPATH:-}"
+
+export CUDA_VISIBLE_DEVICES=0,5,6,7
 export HYDRA_FULL_ERROR=1
 
 ###################################
 # User Configuration Section
 ###################################
 # Set environment variables
-export NUPLAN_DEVKIT_ROOT="REPLACE_WITH_NUPLAN_DEVIKIT_DIR"  # nuplan-devkit absolute path (e.g., "/home/user/nuplan-devkit")
-export NUPLAN_DATA_ROOT="REPLACE_WITH_DATA_DIR"  # nuplan dataset absolute path (e.g. "/data")
-export NUPLAN_MAPS_ROOT="REPLACE_WITH_MAPS_DIR" # nuplan maps absolute path (e.g. "/data/nuplan-v1.1/maps")
-export NUPLAN_EXP_ROOT="REPLACE_WITH_EXP_DIR" # nuplan experiment absolute path (e.g. "/data/nuplan-v1.1/exp")
+export NUPLAN_DEVKIT_ROOT="/data/wyf/lgq/nuplan-devkit"  # nuplan-devkit absolute path (e.g., "/home/user/nuplan-devkit")
+export NUPLAN_DATA_ROOT="/data/wyf/lgq/nuplan/dataset"  # nuplan dataset absolute path (e.g. "/data")
+export NUPLAN_MAPS_ROOT="/data/wyf/lgq/nuplan/dataset/maps" # nuplan maps absolute path (e.g. "/data/nuplan-v1.1/maps")
+export NUPLAN_EXP_ROOT="/data/wyf/lgq/nuplan/exp" # nuplan experiment absolute path (e.g. "/data/nuplan-v1.1/exp")
 
 # Dataset split to use
 # Options: 
 #   - "test14-random"
 #   - "test14-hard"
 #   - "val14"
-SPLIT="val14-collision"  # e.g., "val14"
+SPLIT="val14"  # e.g., "val14"
 
 # Challenge type
 # Options: 
@@ -25,9 +31,11 @@ CHALLENGE="closed_loop_nonreactive_agents"  # e.g., "closed_loop_nonreactive_age
 ###################################
 
 BRANCH_NAME=collision
-ARGS_FILE=./checkpoints/args.json
-CKPT_FILE=./checkpoints/model.pth
+ARGS_FILE=/data/wyf/lgq/Diffusion-Planner/checkpoints/args.json
+CKPT_FILE=/data/wyf/lgq/Diffusion-Planner/checkpoints/model.pth
 SCENARIO_BUILDER="nuplan"
+SCENARIO_DATA_ROOT="$NUPLAN_DATA_ROOT/nuplan-v1.1/splits/val"
+RUN_PYTHON_PATH="/data/wyf/conda_envs/diffusion_planner/bin/python"
 
 echo "Processing $CKPT_FILE..."
 FILENAME=$(basename "$CKPT_FILE")
@@ -35,17 +43,18 @@ FILENAME_WITHOUT_EXTENSION="${FILENAME%.*}"
 
 PLANNER=diffusion_planner_guidance
 
-sudo -E /data/anaconda3/envs/nuplan/bin/python $NUPLAN_DEVKIT_ROOT/nuplan/planning/script/run_simulation.py \
+"$RUN_PYTHON_PATH" "$NUPLAN_DEVKIT_ROOT/nuplan/planning/script/run_simulation.py" \
     +simulation=$CHALLENGE \
     planner=$PLANNER \
     planner.diffusion_planner.config.args_file=$ARGS_FILE \
     planner.diffusion_planner.ckpt_path=$CKPT_FILE \
     scenario_builder=$SCENARIO_BUILDER \
     scenario_filter=$SPLIT \
+    scenario_builder.data_root=$SCENARIO_DATA_ROOT \
     experiment_uid=$PLANNER/$SPLIT/$BRANCH_NAME/${FILENAME_WITHOUT_EXTENSION}_$(date "+%Y-%m-%d-%H-%M-%S") \
     verbose=true \
     worker=ray_distributed \
-    worker.threads_per_node=128 \
+    worker.threads_per_node=23 \
     distributed_mode='SINGLE_NODE' \
     number_of_gpus_allocated_per_simulation=0.15 \
     enable_simulation_progress_bar=true \

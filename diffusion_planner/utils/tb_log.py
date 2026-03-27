@@ -1,7 +1,11 @@
 import os
+import importlib
 from torch.utils.tensorboard import SummaryWriter
 
-import wandb
+try:
+    wandb = importlib.import_module("wandb")
+except ModuleNotFoundError:
+    wandb = None
 
 class TensorBoardLogger():
     def __init__(self, run_name, notes, args, wandb_resume_id, save_path, rank=0):
@@ -14,18 +18,23 @@ class TensorBoardLogger():
         self.id = None
         
         if rank == 0:
-            os.environ["WANDB_MODE"] = "online" if args.use_wandb else "offline"
+            if args.use_wandb:
+                if wandb is None:
+                    print("[WARN] use_wandb=True but wandb is not installed, fallback to tensorboard only.")
+                else:
+                    os.environ["WANDB_MODE"] = "online"
+                    wandb_writer = wandb.init(
+                        project='Diffusion-Planner',
+                        name=run_name,
+                        notes=notes,
+                        resume="allow",
+                        id=wandb_resume_id,
+                        sync_tensorboard=True,
+                        dir=f'{save_path}',
+                    )
+                    wandb.config.update(args)
+                    self.id = wandb_writer.id
 
-            wandb_writer = wandb.init(project='Diffusion-Planner', 
-                name=run_name, 
-                notes=notes,
-                resume="allow",
-                id = wandb_resume_id,
-                sync_tensorboard=True,
-                dir=f'{save_path}')
-            wandb.config.update(args)
-            self.id = wandb_writer.id
-            
             self.writer = SummaryWriter(log_dir=f'{save_path}/tb')
     
     def log_metrics(self, metrics: dict, step: int):

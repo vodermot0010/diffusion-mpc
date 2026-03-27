@@ -1,0 +1,115 @@
+# Diffusion-Planner with interaction-aware joint MPC refinement.
+# This is a lightweight post-refiner inspired by IJP rather than a full IJP pipeline.
+
+diffusion_planner_mpc:
+  _target_: diffusion_planner.planner.planner.DiffusionPlanner
+  _convert_: "all"
+
+  config:
+    _target_: diffusion_planner.utils.config.Config
+    _convert_: "all"
+
+    args_file: ???
+
+    guidance_fn: null
+
+  ckpt_path: ???
+
+  past_trajectory_sampling:
+    _target_: nuplan.planning.simulation.trajectory.trajectory_sampling.TrajectorySampling
+    _convert_: "all"
+
+    num_poses: 20
+    time_horizon: 2
+
+  future_trajectory_sampling:
+    _target_: nuplan.planning.simulation.trajectory.trajectory_sampling.TrajectorySampling
+    _convert_: "all"
+
+    num_poses: 80
+    time_horizon: 8
+
+  device: cuda
+
+  candidate_sampling:
+    enabled: true
+    num_candidates: 3
+    min_ego_speed: 1.0
+    risk_neighbor_distance: 8.0
+    risk_neighbor_count: 2
+    dense_scene_num_candidates: 4
+    dense_neighbor_clearance_weight: 2.5
+    risk_static_distance: 5.0
+    risk_static_count: 2
+    lead_scene_neighbor_distance: 12.0
+    lead_scene_max_neighbors: 1
+    lead_vehicle_distance_threshold: 20.0
+    lead_vehicle_lateral_threshold: 2.5
+    lead_vehicle_heading_threshold: 0.35
+    lead_vehicle_critical_distance: 8.0
+    evaluate_steps: 8
+    clearance_clip: 10.0
+    hard_neighbor_clearance: 2.5
+    hard_static_clearance: 1.5
+    progress_weight: 1.0
+    neighbor_clearance_weight: 2.0
+    static_clearance_weight: 1.5
+    route_weight: 0.5
+    smooth_weight: 0.2
+    lead_scene_smooth_weight: 0.35
+
+  mpc_enabled: true
+
+  mpc_config:
+    horizon: 8
+    dt: 0.1
+    max_neighbors: 2
+    activation_distance: 10.0
+    min_ego_speed: 1.5
+    interaction_clearance_threshold: 5.0
+    min_clearance_improvement: 0.2
+    refine_blend: 0.35
+    refine_steps: 4
+    max_position_delta: 1.0
+    dense_neighbor_distance: 8.0
+    dense_neighbor_count: 2
+    dense_scene_clearance_threshold: 6.0
+    dense_scene_min_clearance_improvement: 0.05
+    dense_scene_refine_blend: 0.45
+    dense_scene_refine_steps: 5
+    static_obstacle_distance: 6.0
+    static_obstacle_skip_count: 2
+
+    wheelbase: 2.89
+    max_steer: 0.7
+    max_accel: 3.0
+    max_decel: -5.0
+    max_speed: 20.0
+
+    max_neighbor_yaw_rate: 0.8
+    max_neighbor_accel: 2.5
+    max_neighbor_decel: -4.0
+    max_neighbor_speed: 20.0
+
+    safety_margin: 3.0
+
+    w_tracking: 2.0
+    w_heading: 0.2
+    w_speed: 0.1
+    w_smooth: 0.1
+    w_control: 0.02
+    w_progress: 0.1
+    w_safety: 40.0
+
+    w_neighbor_prior: 0.5
+    w_neighbor_heading: 0.05
+    w_neighbor_speed: 0.05
+    w_neighbor_smooth: 0.02
+    w_neighbor_control: 0.005
+
+    max_iter: 50
+    tol: 1.0e-4
+    verbose: false
+    rebuild_after_failures: 2
+    disable_after_failures: 8
+    max_logged_failures: 3
